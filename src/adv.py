@@ -1,5 +1,12 @@
 from room import Room
 from player import Player
+from item import Item
+
+def handle_quit(user_input):
+    if user_input.lower() == 'q':
+        print("\nGoodbye!")
+        return False
+    return True
 
 # Declare all the rooms
 
@@ -33,6 +40,14 @@ def main():
     room['narrow'].n_to = room['treasure']
     room['treasure'].s_to = room['narrow']
 
+# Items
+
+    room['outside'].add_item(Item("Sword", "A very sharp weapon to fight against enemies."))
+    room['outside'].add_item(Item("Shield", "Can be used to defend against any projectiles."))
+    room['treasure'].add_item(Item("Treasure", "Filled with gold and jewelry!"))
+    room['foyer'].add_item(Item("Coins", "Can be used to purchase items."))
+    room['narrow'].add_item(Item("Potion", "Can be used to restore health."))
+
 #
 # Main
 #
@@ -54,13 +69,48 @@ def main():
 
     is_playing = True    
     while(is_playing):
-        print("\nCurrent Room:", player.current_room, "\n")
-        user_input = input("Which direction would you like to go? (N, E, S, W) Q to quit: ")
-        user_input = user_input.lower()
-        if user_input == "q":
+        if player.current_room.name() == "Outside Cave Entrance" and player.has_treasure():
             is_playing = False
-            print("\nGoodbye!")
-        elif user_input not in ('n', 'e', 's', 'w'):
+            print("You won the game!")
+            break
+        print("\nCurrent Room:", player.current_room)
+
+        is_deciding = True
+        while(is_deciding):
+            print("\n*** Current items in room:")
+            print(player.current_room.get_items())
+            user_input = input("*** Would you like to do anything with your items? \n(take <item_name>, drop <item_name>, v to view Inventory, C to Continue, Q to Quit): ")
+            is_playing = handle_quit(user_input)
+            if not is_playing:
+                break
+            user_input = user_input.split(" ")
+            if user_input[0].lower() == "drop":
+                item = player.drop_item(user_input[1])
+                if item:
+                    player.current_room.add_item(item)
+                    print(f"Item {user_input[1]} has been dropped on the ground")
+                else:
+                    print("\nThat item does not exist in your inventory!")
+            elif user_input[0].lower() == "take":
+                if player.current_room.get_item_by_name(user_input[1].lower()):
+                    player.add_item(player.current_room.get_item_by_name(user_input[1].lower()))
+                    print(f"\nItem {user_input[1]} has been added to your inventory.")
+                    player.current_room.remove_item_by_name(user_input[1].lower())
+                else:
+                    print("\nThat item does not exist in this room")
+            elif user_input[0].lower() == "c":
+                is_deciding = False
+            elif user_input[0].lower() == "v":
+                print("*** Player inventory: ")
+                print(player.get_inventory())
+        
+        if not is_playing:
+            break
+            
+        user_input = input("Which direction would you like to go? (N, E, S, W) Q to Quit: ")
+        user_input = user_input.lower()
+        is_playing = handle_quit(user_input)
+        if user_input not in ('n', 'e', 's', 'w', 'q'):
             print("\nI'm not sure which direction that is\n")
         else:
             if user_input == 'n':
